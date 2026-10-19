@@ -20,3 +20,19 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+
+  # Executa todas as suítes de testes contra a aplicação em execução.
+  # Só sobe quando pedido: docker compose --profile test run --rm testes
+  testes:
+    profiles: ["test"]
+    image: mcr.microsoft.com/playwright:v1.56.0-noble
+    working_dir: /repo
+    volumes:
+      - ./:/repo
+    environment:
+      # Dentro da rede do Compose o frontend é alcançado pelo nome do serviço.
+      - BASE_URL=http://frontend
+    depends_on:
+      frontend:
+        condition: service_healthy
+    command: ["node", "scripts/executar-testes.mjs"]
