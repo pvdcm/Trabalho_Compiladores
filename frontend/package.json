@@ -1,0 +1,18 @@
+{
+  "name": "visulex-frontend",
+  "version": "0.2.0",
+  "description": "Interface web do VisuLex (HTML, CSS e JavaScript puros servidos pelo Nginx).",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "npm run test:unit && npm run test:ui",
+    "test:unit": "node --test \"test/unit/**/*.test.js\"",
+    "test:ui": "node --test --test-concurrency=1 \"test/ui/**/*.test.js\""
+  },
+  "devDependencies": {
+    "playwright-core": "1.56.0"
+  }
+}

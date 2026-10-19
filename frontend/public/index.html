@@ -3,27 +3,70 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>VisuLex</title>
+  <title>VisuLex — MiniJS</title>
   <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
-  <main class="card">
-    <p class="eyebrow">VisuLex · etapa 1</p>
-    <h1 id="message" aria-live="polite">Conectando ao backend…</h1>
-    <p class="subtitle">Visualizador das análises léxica e sintática de MiniJS, um subconjunto de JavaScript.</p>
+  <header class="cabecalho">
+    <div class="marca">
+      <h1>VisuLex</h1>
+      <p class="subtitulo">Visualizador das análises léxica e sintática</p>
+    </div>
+    <p class="linguagem" id="linguagem">
+      Linguagem analisada: <strong>MiniJS</strong> <span>(subconjunto de JavaScript)</span>
+    </p>
+  </header>
 
-    <dl class="status">
-      <div>
-        <dt>Frontend</dt>
-        <dd><span class="dot ok"></span> no ar</dd>
+  <main class="area">
+    <section class="painel" aria-labelledby="titulo-entrada">
+      <div class="painel-topo">
+        <h2 id="titulo-entrada">Código-fonte</h2>
+        <div class="campo-exemplo">
+          <label for="seletor-exemplo">Exemplo</label>
+          <select id="seletor-exemplo">
+            <option value="">Escolha um exemplo…</option>
+          </select>
+        </div>
       </div>
-      <div>
-        <dt>Backend</dt>
-        <dd id="backend-status"><span class="dot wait"></span> aguardando</dd>
+      <p class="descricao" id="descricao-exemplo" aria-live="polite"></p>
+
+      <textarea
+        id="editor-codigo"
+        class="editor"
+        spellcheck="false"
+        autocomplete="off"
+        autocapitalize="off"
+        aria-describedby="contador dica"
+        placeholder="// Escreva aqui um programa MiniJS, por exemplo:&#10;let x = 10;"
+      ></textarea>
+
+      <div class="painel-base">
+        <span class="contador" id="contador"></span>
+        <div class="acoes">
+          <button type="button" id="botao-limpar" class="botao secundario">Limpar</button>
+          <button type="button" id="botao-analisar" class="botao primario">Analisar</button>
+        </div>
       </div>
-    </dl>
+      <p class="dica" id="dica">Atalho: Ctrl + Enter para analisar.</p>
+    </section>
+
+    <section class="painel" aria-labelledby="resultado-titulo">
+      <div id="resultado" class="resultado" data-estado="inicial" role="status" aria-live="polite">
+        <h2 id="resultado-titulo">Aguardando código</h2>
+        <p id="resultado-mensagem"></p>
+        <dl id="resultado-detalhes" class="detalhes" hidden></dl>
+      </div>
+      <p class="aviso-etapa">
+        Nesta versão o servidor apenas recebe e valida o código. Os tokens e a árvore sintática
+        aparecerão neste painel nas próximas etapas.
+      </p>
+    </section>
   </main>
 
-  <script src="app.js"></script>
+  <footer class="rodape">
+    <span id="status-servidor" class="status" data-online="">Verificando servidor…</span>
+    <span>VisuLex · etapa 2</span>
+  </footer>
 </body>
 </html>
