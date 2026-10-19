@@ -5,3 +5,7 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Claude Code (arquivos pessoais)
+CLAUDE.local.md
+.claude/settings.local.json
