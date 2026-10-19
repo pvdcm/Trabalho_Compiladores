@@ -1,67 +1,89 @@
 # VisuLex
 
-Software educacional web que mostra, passo a passo, as análises **léxica** e **sintática** de programas escritos em **MiniJS**, um subconjunto da linguagem JavaScript. Voltado a estudantes de graduação da disciplina de Compiladores.
+Software educacional web para o ensino de **Compiladores**. O objetivo é mostrar, passo a passo, as análises **léxica** e **sintática** de programas escritos em **MiniJS**, um subconjunto da linguagem JavaScript, para estudantes de graduação.
 
-> **Etapa atual: 1 — estrutura inicial.** A aplicação exibe "Hello, World!" buscado do backend, provando que frontend, backend e Docker Compose estão funcionando juntos. As análises serão implementadas nas próximas etapas.
+> **Etapa atual: 2 — interface web e entrada de código-fonte.** O usuário escreve ou escolhe um programa, solicita a análise e o servidor **recebe e valida** o código, devolvendo um resumo (linhas e caracteres). As análises léxica e sintática **ainda não estão implementadas**; elas serão adicionadas nas próximas etapas.
+
+![Tela principal do VisuLex com o exemplo de estrutura condicional enviado ao servidor](docs/img/interface-sucesso.png)
+
+## Sumário
+
+- [Linguagem analisada](#linguagem-analisada)
+- [Tecnologias e arquitetura](#tecnologias-e-arquitetura)
+- [Como executar](#como-executar)
+- [Como usar a interface](#como-usar-a-interface)
+- [Exemplos disponíveis](#exemplos-disponíveis)
+- [Comunicação entre frontend e backend](#comunicação-entre-frontend-e-backend)
+- [Testes](#testes)
+- [Limitações conhecidas](#limitações-conhecidas)
 
 ## Linguagem analisada
 
 **Linguagem escolhida:** JavaScript, limitada ao subconjunto **MiniJS**.
 
-**Subconjunto inicial:**
+**Subconjunto previsto:** declarações com `let` e `const`; números, strings e booleanos; operadores aritméticos (`+ - * / %`), relacionais (`== != === !== < <= > >=`) e lógicos (`&& || !`); atribuição; `if/else`; `while`; funções simples com `function` e `return`; comentários `//` e `/* */`. A especificação completa está em [`docs/minijs.md`](docs/minijs.md).
 
-- declaração de variáveis com `let` e `const`;
-- números, strings e booleanos;
-- operadores aritméticos (`+ - * / %`), relacionais (`== != === !== < <= > >=`) e lógicos (`&& || !`);
-- atribuição;
-- estruturas `if/else` e `while`;
-- funções simples com `function` e `return`.
+**Por que JavaScript:** é a linguagem que os alunos já usam no desenvolvimento web, o que concentra o esforço nos conceitos de compilação e não na sintaxe; a mesma linguagem é usada para construir a ferramenta; e os trabalhos encontrados na revisão de literatura analisam pseudolinguagens ou linguagens criadas só para a disciplina.
 
-A lista completa de tokens, as construções aceitas e o que fica de fora estão em [`docs/minijs.md`](docs/minijs.md).
+**Por que um subconjunto:** JavaScript completo tem casos difíceis para um primeiro analisador, como o ponto e vírgula opcional e a ambiguidade entre divisão e expressão regular. Em MiniJS o `;` é obrigatório e esses recursos ficam de fora.
 
-**Por que JavaScript:**
+## Tecnologias e arquitetura
 
-1. É uma linguagem que os alunos já usam no desenvolvimento web, então o esforço fica nos conceitos de compilação, e não na sintaxe.
-2. A mesma linguagem é usada para construir a ferramenta (frontend e backend em JavaScript), o que mantém o projeto em uma única linguagem.
-3. Os trabalhos encontrados na revisão de literatura analisam pseudolinguagens ou linguagens criadas só para a disciplina; analisar uma linguagem real e popular é um diferencial.
-
-**Por que um subconjunto:** JavaScript completo tem casos difíceis para um primeiro analisador, como o ponto e vírgula opcional e a ambiguidade entre divisão e expressão regular. Começar com um núcleo pequeno torna o projeto viável e permite crescer a cada etapa.
-
-## Arquitetura
+| Componente | Tecnologia | Papel |
+| --- | --- | --- |
+| Frontend | HTML, CSS e JavaScript puros (módulos ES), servidos pelo **Nginx 1.27** | Interface, validação inicial e envio do código |
+| Backend | **Node.js 22**, apenas módulos nativos (sem dependências) | API, validação e processamento do código |
+| Testes | `node:test` (nativo) e **Playwright 1.56** (`playwright-core`) com Chromium | Unitários, endpoints, interface, ponta a ponta e implantação |
+| Ambiente | **Docker** e **Docker Compose** | Execução reproduzível dos serviços e dos testes |
 
 ```
 Navegador ──► frontend (Nginx, porta 8080)
-                 ├── /        → arquivos estáticos (HTML, CSS, JS)
-                 └── /api/*   → repassa para ──► backend (Node.js, porta 3000, rede interna)
+                 ├── /        → arquivos estáticos (index.html, styles.css, js/)
+                 └── /api/*   → repassa para ──► backend (Node.js, porta 3000, só na rede interna)
 ```
 
-- **frontend:** página estática servida pelo Nginx, que também repassa as chamadas `/api/` ao backend. Assim o navegador fala com um único endereço.
-- **backend:** API em Node.js sem dependências externas. Nas próximas etapas receberá o código MiniJS e devolverá tokens, passos do autômato e a árvore sintática.
-- **Banco de dados:** não é necessário nesta etapa.
+O navegador usa sempre o mesmo endereço (`/api/...`) e o Nginx repassa ao serviço `backend` pela rede interna do Compose. Assim o frontend não depende de nomes que só existem dentro do Docker.
 
-## Estrutura de pastas
+### Estrutura de pastas
 
 ```
 visulex/
 ├── backend/
 │   ├── src/
-│   │   ├── app.js          # rotas da API
-│   │   └── server.js       # inicia o servidor
-│   ├── test/               # testes automatizados (node --test)
-│   ├── Dockerfile
-│   └── package.json
+│   │   ├── app.js            # rotas, leitura do corpo e tratamento de erros
+│   │   ├── validacao.js      # regras de validação da requisição
+│   │   ├── processamento.js  # processamento do código (receberá os analisadores)
+│   │   ├── erros.js          # erros previstos e mensagem genérica
+│   │   └── server.js         # inicia o servidor
+│   └── test/                 # unitários, endpoints e regressão (node:test)
 ├── frontend/
-│   ├── public/             # index.html, styles.css, app.js
-│   ├── nginx.conf          # servidor estático + proxy para /api
-│   └── Dockerfile
+│   ├── public/
+│   │   ├── index.html
+│   │   ├── styles.css
+│   │   └── js/
+│   │       ├── exemplos.js   # programas de exemplo
+│   │       ├── validacao.js  # validação antes do envio
+│   │       ├── api.js        # comunicação com o backend
+│   │       ├── interface.js  # comportamento da tela
+│   │       └── main.js       # ponto de entrada
+│   ├── test/
+│   │   ├── unit/             # unitários (node:test)
+│   │   └── ui/               # interface e integração no navegador (Playwright)
+│   └── nginx.conf
+├── testes/
+│   └── implantacao.test.mjs  # verificações da aplicação implantada
+├── scripts/
+│   └── executar-testes.mjs   # roda todas as suítes e mostra um resumo
 ├── docs/
-│   └── minijs.md           # especificação do subconjunto MiniJS
-├── docker-compose.yml
-├── .env.example            # porta do frontend (opcional)
-└── README.md
+│   ├── minijs.md             # especificação do subconjunto
+│   ├── testes.md             # registro das execuções de testes
+│   └── img/                  # prints da interface
+└── docker-compose.yml
 ```
 
-## Pré-requisitos
+## Como executar
+
+### Pré-requisitos
 
 | Ferramenta | Versão mínima | Como conferir |
 | --- | --- | --- |
@@ -69,96 +91,184 @@ visulex/
 | Docker Compose (plugin v2) | 2.20 | `docker compose version` |
 | Git | qualquer recente | `git --version` |
 
-Node.js **não** precisa estar instalado: tudo roda dentro dos contêineres. A porta **8080** precisa estar livre (veja como trocar em [Problemas comuns](#problemas-comuns)).
+Node.js **não** é necessário para executar a aplicação nem os testes pelo Docker. A porta **8080** precisa estar livre.
 
-## Como executar
+### Iniciar
 
 ```bash
-# 1. Baixar o projeto
 git clone https://github.com/<seu-usuario>/visulex.git
 cd visulex
-
-# 2. Construir as imagens e subir os contêineres em segundo plano
 docker compose up --build -d
-
-# 3. Conferir se os dois serviços estão "running" (o backend aparece como "healthy")
-docker compose ps
+docker compose ps        # backend e frontend devem aparecer como "healthy"
 ```
 
-Abra **http://localhost:8080** no navegador. A página deve mostrar **Hello, World!** e o status do backend como "respondendo".
+### Acessar
 
-Para testar a API direto pelo terminal:
+Abra **http://localhost:8080** no navegador. O rodapé deve mostrar **Servidor conectado**.
+
+### Encerrar
 
 ```bash
-curl http://localhost:8080/api/hello
-# {"message":"Hello, World!"}
+docker compose down              # para e remove os contêineres e a rede
+docker compose down --rmi local  # (opcional) remove também as imagens do projeto
 ```
 
-## Como encerrar
+### Variáveis de ambiente
 
-```bash
-# Parar e remover os contêineres e a rede do projeto
-docker compose down
+| Variável | Padrão | Uso |
+| --- | --- | --- |
+| `FRONTEND_PORT` | `8080` | Porta da interface na sua máquina. Para trocar, copie `.env.example` para `.env`. |
+| `PORT` (backend) | `3000` | Porta interna do backend, definida no `docker-compose.yml`. |
 
-# (Opcional) remover também as imagens construídas pelo projeto
-docker compose down --rmi local
+Nenhuma senha, token ou credencial é necessária.
+
+## Como usar a interface
+
+- **Área de código:** campo com fonte monoespaçada para escrever, colar ou editar um programa. Abaixo dele, um contador mostra linhas e caracteres. O conteúdo permanece no campo depois de cada análise.
+- **Exemplo:** o seletor no topo carrega um programa pronto no campo, **substituindo** o conteúdo atual, e mostra uma descrição. O exemplo pode ser editado antes da análise.
+- **Analisar:** envia o código ao servidor. O atalho **Ctrl + Enter** faz o mesmo. Durante o envio o botão fica desabilitado.
+- **Limpar:** esvazia o campo e reinicia o seletor e os resultados.
+- **Resultado:** mostra a resposta com cores e títulos diferentes para cada situação:
+
+| Situação | Título exibido | Exemplo de mensagem |
+| --- | --- | --- |
+| Código recebido | Código recebido | "Código recebido com sucesso. As análises léxica e sintática serão implementadas nas próximas etapas." + linhas e caracteres |
+| Campo vazio | Problema na entrada | "Informe um código-fonte antes de solicitar a análise." |
+| Só espaços | Problema na entrada | "O código contém apenas espaços em branco. Escreva ou selecione um programa MiniJS." |
+| Servidor inacessível | Falha de comunicação | "Não foi possível comunicar com o servidor. Verifique a conexão e tente novamente." |
+| Erro no servidor | Erro inesperado | "Ocorreu um erro inesperado. Tente novamente em instantes." |
+
+Entradas vazias ou só com espaços são barradas no próprio navegador, sem requisição. O backend repete todas as validações.
+
+## Exemplos disponíveis
+
+| Exemplo | Construções de MiniJS demonstradas |
+| --- | --- |
+| Declaração de variáveis | `let`, `const`, números inteiros e decimais, strings, booleanos, atribuição |
+| Expressões aritméticas | `+ - * / %`, precedência de operadores, parênteses |
+| Estrutura condicional | `if/else`, operadores relacionais (`>=`) e lógicos (`&&`), blocos |
+| Repetição com while | `while`, operadores relacionais, atribuição, comentários |
+| Declaração e chamada de função | `function`, parâmetros, `return`, chamada de função, `if` |
+| Programa com erros intencionais ⚠ | erro léxico (símbolo `@`) e erro sintático (falta `;`), para as próximas etapas |
+
+Os programas ficam em [`frontend/public/js/exemplos.js`](frontend/public/js/exemplos.js).
+
+## Comunicação entre frontend e backend
+
+### `POST /api/analisar`
+
+Requisição (`Content-Type: application/json`):
+
+```json
+{ "codigo": "let x = 10;" }
 ```
 
-## Comandos úteis
+Resposta de sucesso — **200**:
 
-```bash
-docker compose logs -f            # acompanhar os logs dos dois serviços
-docker compose logs -f backend    # só o backend
-docker compose restart            # reiniciar os serviços
-docker compose up --build -d      # reconstruir após alterar o código
+```json
+{
+  "recebido": true,
+  "mensagem": "Código recebido com sucesso. As análises léxica e sintática serão implementadas nas próximas etapas.",
+  "resumo": { "caracteres": 11, "linhas": 1 }
+}
 ```
+
+Resposta de erro — sempre no formato:
+
+```json
+{ "erro": { "codigo": "CODIGO_VAZIO", "mensagem": "Informe um código-fonte antes de solicitar a análise." } }
+```
+
+| HTTP | `erro.codigo` | Quando |
+| --- | --- | --- |
+| 400 | `CORPO_VAZIO` | Requisição sem corpo |
+| 400 | `JSON_INVALIDO` | Corpo não é JSON válido |
+| 400 | `CORPO_INVALIDO` | JSON não é um objeto (ex.: lista) |
+| 400 | `CODIGO_AUSENTE` | Falta o campo `codigo` |
+| 400 | `CODIGO_TIPO_INVALIDO` | `codigo` não é texto |
+| 400 | `CODIGO_VAZIO` | `codigo` é `""` |
+| 400 | `CODIGO_SO_ESPACOS` | `codigo` só tem espaços, tabulações ou quebras de linha |
+| 400 | `CODIGO_MUITO_GRANDE` | Mais de 10.000 caracteres |
+| 405 | `METODO_NAO_PERMITIDO` | Método diferente de POST (cabeçalho `Allow: POST`) |
+| 413 | `PAYLOAD_MUITO_GRANDE` | Corpo acima de 64 KB |
+| 415 | `CONTENT_TYPE_INVALIDO` | `Content-Type` diferente de `application/json` |
+| 500 | `ERRO_INTERNO` | Falha inesperada; a mensagem é genérica e os detalhes ficam só no log do servidor |
+
+Código com erros de MiniJS (por exemplo, `let = @@`) é **aceito** nesta etapa: julgar a sintaxe é papel dos analisadores das próximas etapas.
+
+### Outras rotas
+
+| Rota | Resposta |
+| --- | --- |
+| `GET /api/health` | `{ "status": "ok" }` — usada pelo healthcheck do Docker e pelo indicador do rodapé |
+| `GET /api/hello` | `{ "message": "Hello, World!" }` — mantida da etapa 1 e coberta por teste de regressão |
 
 ## Testes
 
-Os testes do backend rodam dentro de um contêiner, sem instalar nada:
+### Suítes
+
+| Suíte | Tipo | Ferramenta | Quantidade |
+| --- | --- | --- | --- |
+| `backend/test/` | Unitários, endpoints e regressão | `node:test` | 35 |
+| `frontend/test/unit/` | Unitários (exemplos, validação, cliente da API) | `node:test` | 27 |
+| `frontend/test/ui/` | Interface e integração no navegador (backend real); ponta a ponta quando `BASE_URL` aponta para a aplicação implantada | `node:test` + Playwright | 25 |
+| `testes/implantacao.test.mjs` | Implantação: aplicação acessível, proxy, saúde e validação via Nginx | `node:test` | 7 |
+
+### Como executar
+
+**Pelo Docker (recomendado, não exige Node.js):**
 
 ```bash
-docker run --rm -v "$PWD/backend:/app" -w /app node:22-alpine npm test
+docker compose up --build -d
+docker compose --profile test run --rm testes
 ```
 
-## Validação de instalação limpa
+O serviço `testes` usa a imagem oficial do Playwright, roda as quatro suítes contra a aplicação em execução e termina com um resumo `PASSOU/FALHOU`. Na primeira execução ele baixa o pacote `playwright-core`, então precisa de internet.
 
-Procedimento para garantir que o projeto não depende de nada que exista só na máquina do autor:
+**Localmente (Node.js 22 ou superior):**
 
 ```bash
-# 1. Remover qualquer resto de execuções anteriores
+cd frontend
+npm install
+npx playwright-core install chromium
+cd ..
+node scripts/executar-testes.mjs                                   # backend, frontend e interface
+BASE_URL=http://localhost:8080 node scripts/executar-testes.mjs    # inclui implantação (com o Compose no ar)
+```
+
+No PowerShell, defina a variável antes: `$env:BASE_URL="http://localhost:8080"; node scripts/executar-testes.mjs`.
+
+### Resultados
+
+Na última execução registrada, **94 de 94 testes passaram** (35 backend, 27 frontend, 25 interface e 7 de implantação). O histórico completo, incluindo as falhas encontradas e como foram corrigidas, está em [`docs/testes.md`](docs/testes.md).
+
+**Pendente:** a execução com o Docker Compose real (`docker compose up` e `--profile test`) ainda precisa ser feita e registrada em `docs/testes.md`. No ambiente em que o código foi desenvolvido, as imagens do Docker Hub não puderam ser baixadas. Os testes de implantação rodaram contra uma réplica local, com Node.js no lugar do Nginx.
+
+### Validação de instalação limpa
+
+```bash
 docker compose down --rmi local --remove-orphans
-
-# 2. Clonar o repositório em uma pasta nova
 cd /tmp && rm -rf visulex-teste
-git clone https://github.com/<seu-usuario>/visulex.git visulex-teste
-cd visulex-teste
-
-# 3. Seguir apenas os comandos da seção "Como executar"
+git clone https://github.com/<seu-usuario>/visulex.git visulex-teste && cd visulex-teste
 docker compose up --build -d
-docker compose ps
-curl http://localhost:8080/api/hello
-
-# 4. Encerrar
+docker compose --profile test run --rm testes
 docker compose down --rmi local
 ```
 
-**Registro da validação:**
+## Limitações conhecidas
 
-| Data | Sistema operacional | Docker | Compose | Resultado |
-| --- | --- | --- | --- | --- |
-| _preencher_ | _ex.: Ubuntu 24.04 / Windows 11_ | _ex.: 27.x_ | _ex.: 2.29_ | _"Hello, World!" exibido_ |
-
-## Problemas comuns
-
-- **Porta 8080 ocupada:** copie `.env.example` para `.env` e troque o valor de `FRONTEND_PORT` (por exemplo, `8081`). Depois rode `docker compose up -d` e acesse `http://localhost:8081`.
-- **"Não foi possível falar com o backend" na página:** veja `docker compose logs backend`. O frontend só sobe depois que o backend passa no healthcheck, então aguarde alguns segundos e recarregue.
-- **`docker compose` não encontrado:** versões antigas usam `docker-compose` (com hífen). Atualize para o Compose v2.
+- As análises léxica e sintática **não estão implementadas**. O servidor só recebe, valida e resume o código.
+- O editor é um campo de texto simples, sem realce de sintaxe nem numeração de linhas.
+- Escolher um exemplo substitui o código atual sem pedir confirmação.
+- O código é limitado a 10.000 caracteres.
+- O indicador "Servidor conectado" é verificado só ao abrir a página. Falhas posteriores aparecem ao clicar em Analisar.
+- Os testes pelo Docker precisam de internet na primeira execução, para baixar o `playwright-core`.
 
 ## Roadmap
 
 - [x] Etapa 1 — estrutura, Docker e "Hello, World!"
+- [x] Etapa 2 — interface, exemplos, comunicação, validações e testes automatizados
 - [ ] Analisador léxico de MiniJS com autômato animado
 - [ ] Analisador sintático LL(1) com construção passo a passo da árvore
-- [ ] Explicações teóricas e exemplos prontos
+- [ ] Explicações teóricas
 - [ ] Avaliação com alunos (pré e pós-teste)
