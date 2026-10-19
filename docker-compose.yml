@@ -1,0 +1,22 @@
+name: visulex
+
+services:
+  backend:
+    build: ./backend
+    container_name: visulex-backend
+    environment:
+      - PORT=3000
+    # Sem porta publicada: o backend só é acessível pela rede interna do Compose (via frontend).
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: visulex-frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

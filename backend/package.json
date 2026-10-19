@@ -1,0 +1,15 @@
+{
+  "name": "visulex-backend",
+  "version": "0.1.0",
+  "description": "Backend do VisuLex: API que processará as análises léxica e sintática de MiniJS.",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/**/*.test.js\""
+  }
+}

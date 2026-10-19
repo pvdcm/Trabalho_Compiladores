@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VisuLex</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="card">
+    <p class="eyebrow">VisuLex · etapa 1</p>
+    <h1 id="message" aria-live="polite">Conectando ao backend…</h1>
+    <p class="subtitle">Visualizador das análises léxica e sintática de MiniJS, um subconjunto de JavaScript.</p>
+
+    <dl class="status">
+      <div>
+        <dt>Frontend</dt>
+        <dd><span class="dot ok"></span> no ar</dd>
+      </div>
+      <div>
+        <dt>Backend</dt>
+        <dd id="backend-status"><span class="dot wait"></span> aguardando</dd>
+      </div>
+    </dl>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
