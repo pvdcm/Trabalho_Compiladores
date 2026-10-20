@@ -27,11 +27,24 @@ Histórico das execuções relevantes dos testes automatizados. Cada nova funcio
 
 **Observação sobre o item 5:** para conferir que os testes realmente detectam regressões, dois defeitos foram introduzidos de propósito. O primeiro removeu a desabilitação do botão e a trava contra envio duplicado em `interface.js`. O segundo trocou o texto da mensagem de entrada vazia em `validacao.js`. Os testes que deveriam falhar falharam e o código foi restaurado.
 
+## Etapa 2 — validação com o Docker real — 20/10/2026
+
+| Item | Versão |
+| --- | --- |
+| Sistema | Windows 11 Home Single Language 10.0.26200 (máquina do aluno) |
+| Docker | `Docker version 26.0.0, build 2ae903e` |
+| Docker Compose | `Docker Compose version v2.26.1-desktop.1` |
+| Imagem de testes | `mcr.microsoft.com/playwright:v1.56.0-noble` (Node.js v22.20.0) |
+
+| # | Funcionalidade / módulo | Tipo de teste | Comando | Resultado | Falhas e correções |
+| --- | --- | --- | --- | --- | --- |
+| 9 | Implantação completa a partir do zero | Implantação | `docker compose down --rmi local --remove-orphans` e `docker compose up --build -d` | 1ª tentativa: **falhou**. 2ª: imagens construídas e contêineres iniciados | Na 1ª tentativa o `frontend` não subiu: `Ports are not available: exposing port TCP 0.0.0.0:8080 ... bind: Only one usage of each socket address ... is normally permitted`. A porta 8080 estava ocupada por outro programa da máquina (processo `java`, alheio ao projeto). Não é defeito do VisuLex: foi criado um `.env` a partir do `.env.example` com `FRONTEND_PORT=8081`, e o README passou a explicar esse caso. |
+| 10 | Saúde dos serviços | Implantação | `docker compose ps` | **`backend` e `frontend` healthy**, interface em `0.0.0.0:8081->80/tcp`; `GET http://localhost:8081/api/health` → `{"status":"ok"}` | — |
+| 11 | Todas as suítes + implantação, dentro do Docker | Regressão completa + ponta a ponta + implantação | `docker compose --profile test run --rm testes` | **94 aprovados, 0 reprovados** (backend 35, frontend 27, interface 25, implantação 7); resumo com 4 × `PASSOU`; código de saída 0 | A 1ª execução levou mais de 10 minutos porque a imagem do Playwright (~2 GB) ainda não existia na máquina. A 2ª execução, com a imagem já baixada, levou 71 s e repetiu o resultado. |
+
 ## Pendências
 
-- [ ] **Executar com o Docker Compose real** e registrar aqui o resultado:
-  `docker compose up --build -d`, `docker compose ps` (serviços *healthy*) e `docker compose --profile test run --rm testes`.
-  No ambiente de desenvolvimento, as imagens do Docker Hub (`nginx`, `node`) não puderam ser baixadas, e a imagem do Playwright (`mcr.microsoft.com`) não chegou a ser testada.
+- [x] **Executar com o Docker Compose real** e registrar aqui o resultado: feito em 20/10/2026 (itens 9 a 11), com a interface na porta 8081 porque a 8080 estava ocupada na máquina.
 - [ ] Validação de instalação limpa (seção do README) em outra máquina ou pasta.
 - [ ] Testes de acessibilidade automatizados (ainda não implementados).
 

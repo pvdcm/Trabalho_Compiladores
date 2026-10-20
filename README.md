@@ -91,7 +91,7 @@ visulex/
 | Docker Compose (plugin v2) | 2.20 | `docker compose version` |
 | Git | qualquer recente | `git --version` |
 
-Node.js **não** é necessário para executar a aplicação nem os testes pelo Docker. A porta **8080** precisa estar livre.
+Node.js **não** é necessário para executar a aplicação nem os testes pelo Docker. A interface usa a porta **8080**. Se ela estiver ocupada por outro programa (o `docker compose up` falha com "Ports are not available"), escolha outra porta com `FRONTEND_PORT`: veja [Variáveis de ambiente](#variáveis-de-ambiente).
 
 ### Iniciar
 
@@ -117,7 +117,7 @@ docker compose down --rmi local  # (opcional) remove também as imagens do proje
 
 | Variável | Padrão | Uso |
 | --- | --- | --- |
-| `FRONTEND_PORT` | `8080` | Porta da interface na sua máquina. Para trocar, copie `.env.example` para `.env`. |
+| `FRONTEND_PORT` | `8080` | Porta da interface na sua máquina. Para trocar, copie `.env.example` para `.env` e altere o valor (ex.: `FRONTEND_PORT=8081`); a interface passa a ficar em `http://localhost:8081`. |
 | `PORT` (backend) | `3000` | Porta interna do backend, definida no `docker-compose.yml`. |
 
 Nenhuma senha, token ou credencial é necessária.
@@ -189,6 +189,7 @@ Resposta de erro — sempre no formato:
 | 400 | `CODIGO_VAZIO` | `codigo` é `""` |
 | 400 | `CODIGO_SO_ESPACOS` | `codigo` só tem espaços, tabulações ou quebras de linha |
 | 400 | `CODIGO_MUITO_GRANDE` | Mais de 10.000 caracteres |
+| 404 | `ROTA_NAO_ENCONTRADA` | Caminho que não existe na API (vale para qualquer rota) |
 | 405 | `METODO_NAO_PERMITIDO` | Método diferente de POST (cabeçalho `Allow: POST`) |
 | 413 | `PAYLOAD_MUITO_GRANDE` | Corpo acima de 64 KB |
 | 415 | `CONTENT_TYPE_INVALIDO` | `Content-Type` diferente de `application/json` |
@@ -240,9 +241,7 @@ No PowerShell, defina a variável antes: `$env:BASE_URL="http://localhost:8080";
 
 ### Resultados
 
-Na última execução registrada, **94 de 94 testes passaram** (35 backend, 27 frontend, 25 interface e 7 de implantação). O histórico completo, incluindo as falhas encontradas e como foram corrigidas, está em [`docs/testes.md`](docs/testes.md).
-
-**Pendente:** a execução com o Docker Compose real (`docker compose up` e `--profile test`) ainda precisa ser feita e registrada em `docs/testes.md`. No ambiente em que o código foi desenvolvido, as imagens do Docker Hub não puderam ser baixadas. Os testes de implantação rodaram contra uma réplica local, com Node.js no lugar do Nginx.
+Na última execução registrada (20/10/2026, com o Docker Compose real: `docker compose --profile test run --rm testes`), **94 de 94 testes passaram** (35 backend, 27 frontend, 25 interface e 7 de implantação). O histórico completo, incluindo as falhas encontradas e como foram corrigidas, está em [`docs/testes.md`](docs/testes.md).
 
 ### Validação de instalação limpa
 
