@@ -11,6 +11,16 @@ function respostaJson(status, corpo) {
   return new Response(JSON.stringify(corpo), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
+// Resposta 200 no formato do contrato da etapa 3.
+const RESPOSTA_VALIDA = {
+  sucesso: true,
+  mensagem: 'Análise léxica concluída: 1 token reconhecido e nenhum erro léxico.',
+  resumo: { caracteres: 1, linhas: 1, tokens: 1, erros: 0 },
+  tokens: [{ tipo: 'IDENTIFICADOR', lexema: 'x', linha: 1, coluna: 1, inicio: 0, fim: 1 }],
+  erros: [],
+  passos: [],
+};
+
 function fetchFalso(resposta) {
   const chamadas = [];
   const fn = async (url, opcoes) => {
@@ -24,7 +34,7 @@ function fetchFalso(resposta) {
 
 test('envia POST /api/analisar com JSON { codigo } exatamente como digitado', async () => {
   const codigo = '  let s = "ção\\n😀";\r\n\t';
-  const fetch = fetchFalso(respostaJson(200, { recebido: true, mensagem: 'ok', resumo: { linhas: 2, caracteres: 18 } }));
+  const fetch = fetchFalso(respostaJson(200, RESPOSTA_VALIDA));
   await enviarCodigo(codigo, { fetch });
   assert.equal(fetch.chamadas.length, 1);
   const { url, opcoes } = fetch.chamadas[0];
@@ -35,9 +45,28 @@ test('envia POST /api/analisar com JSON { codigo } exatamente como digitado', as
 });
 
 test('resposta 200 válida vira { ok: true, dados }', async () => {
-  const dados = { recebido: true, mensagem: 'Código recebido com sucesso.', resumo: { linhas: 1, caracteres: 10 } };
-  const r = await enviarCodigo('let a = 1;', { fetch: fetchFalso(respostaJson(200, dados)) });
+  const r = await enviarCodigo('x', { fetch: fetchFalso(respostaJson(200, RESPOSTA_VALIDA)) });
+  assert.deepEqual(r, { ok: true, dados: RESPOSTA_VALIDA });
+});
+
+test('resposta 200 com erros léxicos (sucesso false) também é um resultado válido', async () => {
+  const dados = { ...RESPOSTA_VALIDA, sucesso: false, erros: [{ tipo: 'ERRO_LEXICO', codigo: 'CARACTERE_INVALIDO', lexema: '@' }] };
+  const r = await enviarCodigo('@', { fetch: fetchFalso(respostaJson(200, dados)) });
   assert.deepEqual(r, { ok: true, dados });
+});
+
+test('resposta 200 sem os campos do contrato da análise léxica vira erro inesperado', async () => {
+  const incompletas = [
+    { recebido: true, mensagem: 'formato da etapa 2' },
+    { ...RESPOSTA_VALIDA, sucesso: 'sim' },
+    { ...RESPOSTA_VALIDA, tokens: undefined },
+    { ...RESPOSTA_VALIDA, erros: null },
+    { ...RESPOSTA_VALIDA, passos: 'x' },
+  ];
+  for (const dados of incompletas) {
+    const r = await enviarCodigo('x', { fetch: fetchFalso(respostaJson(200, dados)) });
+    assert.equal(r.tipo, 'inesperado', JSON.stringify(dados));
+  }
 });
 
 test('erro 400 do servidor vira problema de entrada com a mensagem do servidor', async () => {
@@ -89,7 +118,7 @@ test('erro 4xx sem corpo no formato do contrato vira erro inesperado', async () 
 });
 
 test('baseUrl é respeitada', async () => {
-  const fetch = fetchFalso(respostaJson(200, { recebido: true, mensagem: 'ok' }));
+  const fetch = fetchFalso(respostaJson(200, RESPOSTA_VALIDA));
   await enviarCodigo('x', { fetch, baseUrl: 'http://exemplo:8080' });
   assert.equal(fetch.chamadas[0].url, 'http://exemplo:8080/api/analisar');
 });

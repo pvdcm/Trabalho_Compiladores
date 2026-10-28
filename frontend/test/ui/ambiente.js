@@ -6,6 +6,8 @@
 //
 // Com BASE_URL (ex.: http://frontend no Docker Compose): os mesmos testes rodam contra a
 // aplicação implantada, funcionando como testes de ponta a ponta.
+//
+// Com NAVEGADOR (ex.: msedge): usa o navegador instalado em vez do Chromium do Playwright.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -67,7 +69,8 @@ export async function iniciarAmbiente() {
     fechar.push(() => new Promise((r) => estatico.close(r)), () => new Promise((r) => backend.close(r)));
   }
 
-  const navegador = await chromium.launch();
+  // NAVEGADOR=msedge (ou chrome) usa o navegador já instalado no sistema, sem baixar o Chromium.
+  const navegador = await chromium.launch(process.env.NAVEGADOR ? { channel: process.env.NAVEGADOR } : {});
   fechar.unshift(() => navegador.close());
 
   return {

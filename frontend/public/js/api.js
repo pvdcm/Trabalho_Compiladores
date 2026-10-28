@@ -4,7 +4,8 @@
 //
 // Contrato (documentado no README):
 //   POST /api/analisar   { "codigo": "<texto>" }
-//   200 -> { "recebido": true, "mensagem": "...", "resumo": { "caracteres": n, "linhas": n } }
+//   200 -> { "sucesso": bool, "mensagem": "...", "resumo": {...}, "tokens": [...], "erros": [...], "passos": [...] }
+//          (sucesso false indica erros léxicos no programa, não uma falha da requisição)
 //   4xx -> { "erro": { "codigo": "CODIGO_VAZIO", "mensagem": "..." } }
 
 export const MENSAGEM_COMUNICACAO = 'Não foi possível comunicar com o servidor. Verifique a conexão e tente novamente.';
@@ -12,6 +13,15 @@ export const MENSAGEM_INESPERADO = 'Ocorreu um erro inesperado. Tente novamente 
 
 // Status que indicam que o servidor da aplicação não foi alcançado (ex.: Nginx sem backend).
 const STATUS_INDISPONIVEL = new Set([502, 503, 504]);
+
+function respostaDeAnaliseValida(dados) {
+  return Boolean(dados)
+    && typeof dados.sucesso === 'boolean'
+    && typeof dados.mensagem === 'string'
+    && Array.isArray(dados.tokens)
+    && Array.isArray(dados.erros)
+    && (dados.passos === undefined || Array.isArray(dados.passos));
+}
 
 async function lerJson(resposta) {
   try {
@@ -47,7 +57,7 @@ export async function enviarCodigo(codigo, { fetch: fetchImpl = globalThis.fetch
   const dados = await lerJson(resposta);
 
   if (resposta.ok) {
-    if (dados && dados.recebido === true && typeof dados.mensagem === 'string') {
+    if (respostaDeAnaliseValida(dados)) {
       return { ok: true, dados };
     }
     return { ok: false, tipo: 'inesperado', mensagem: MENSAGEM_INESPERADO };

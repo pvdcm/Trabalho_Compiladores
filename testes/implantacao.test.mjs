@@ -37,12 +37,29 @@ test('o backend está saudável e acessível pelo proxy em /api', async () => {
   assert.deepEqual(await res.json(), { status: 'ok' });
 });
 
-test('POST /api/analisar recebe o código pelo proxy (comunicação frontend → backend)', async () => {
+test('POST /api/analisar devolve os tokens pelo proxy (comunicação frontend → backend)', async () => {
   const res = await postAnalisar({ codigo: 'let x = 10;' });
   assert.equal(res.status, 200);
   const corpo = await res.json();
-  assert.equal(corpo.recebido, true);
-  assert.deepEqual(corpo.resumo, { caracteres: 11, linhas: 1 });
+  assert.equal(corpo.sucesso, true);
+  assert.deepEqual(corpo.resumo, { caracteres: 11, linhas: 1, tokens: 5, erros: 0 });
+  assert.deepEqual(corpo.tokens.map((t) => [t.tipo, t.lexema]), [
+    ['PALAVRA_RESERVADA', 'let'], ['IDENTIFICADOR', 'x'], ['OPERADOR_ATRIBUICAO', '='], ['LITERAL_INTEIRO', '10'], ['DELIMITADOR', ';'],
+  ]);
+});
+
+test('erros léxicos chegam pelo proxy com mensagem e localização', async () => {
+  const res = await postAnalisar({ codigo: 'let total = 10 @ 2;' });
+  assert.equal(res.status, 200);
+  const corpo = await res.json();
+  assert.equal(corpo.sucesso, false);
+  assert.equal(corpo.erros[0].mensagem.startsWith('Erro léxico na linha 1, coluna 16'), true);
+});
+
+test('o módulo do frontend que exibe os tokens é servido', async () => {
+  const res = await fetch(`${BASE_URL}/js/lexico.js`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type'), /javascript/);
 });
 
 test('o backend valida a entrada mesmo sem passar pela interface', async () => {

@@ -1,8 +1,13 @@
 // Testes de interface no navegador (Chromium via Playwright), com o backend real.
 import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import { iniciarAmbiente } from './ambiente.js';
 import { EXEMPLOS } from '../../public/js/exemplos.js';
+
+// Scanner do backend, usado para calcular os valores esperados na tela.
+const require = createRequire(import.meta.url);
+const { analisarLexico } = require('../../../backend/src/analisadorLexico.js');
 
 let ambiente;
 before(async () => { ambiente = await iniciarAmbiente(); });
@@ -11,6 +16,7 @@ after(() => ambiente.encerrar());
 const editor = (p) => p.locator('#editor-codigo');
 const resultado = (p) => p.locator('#resultado');
 const botaoAnalisar = (p) => p.locator('#botao-analisar');
+const secaoLexica = (p) => p.locator('#secao-lexica');
 
 async function estado(p) {
   return resultado(p).getAttribute('data-estado');
@@ -115,9 +121,10 @@ describe('entrada e envio do código', () => {
     ]);
     assert.deepEqual(requisicao.postDataJSON(), { codigo: esperado });
     await esperarEstado(p, 'sucesso');
-    assert.match(await p.locator('#resultado-mensagem').textContent(), /recebido com sucesso/);
+    assert.match(await p.locator('#resultado-mensagem').textContent(), /^Análise léxica concluída/);
     const detalhes = await p.locator('#resultado-detalhes dd').allTextContents();
-    assert.deepEqual(detalhes, [String(esperado.split('\n').length), String([...esperado].length)]);
+    const totalTokens = analisarLexico(esperado).tokens.length;
+    assert.deepEqual(detalhes, [String(esperado.split('\n').length), String([...esperado].length), String(totalTokens), '0']);
     await p.context().close();
   });
 
@@ -132,7 +139,7 @@ describe('entrada e envio do código', () => {
     assert.equal(requisicao.postDataJSON().codigo, codigo);
     await esperarEstado(p, 'sucesso');
     // O texto vindo do servidor é exibido como texto, nunca interpretado como HTML.
-    assert.equal(await p.locator('#resultado b').count(), 0);
+    assert.equal(await p.locator('main b').count(), 0);
     await p.context().close();
   });
 
@@ -158,10 +165,12 @@ describe('entrada e envio do código', () => {
     await p.selectOption('#seletor-exemplo', 'funcao');
     await botaoAnalisar(p).click();
     await esperarEstado(p, 'sucesso');
+    assert.equal(await secaoLexica(p).isVisible(), true);
     await p.locator('#botao-limpar').click();
     assert.equal(await editor(p).inputValue(), '');
     assert.equal(await p.locator('#seletor-exemplo').inputValue(), '');
     assert.equal(await estado(p), 'inicial');
+    assert.equal(await secaoLexica(p).isVisible(), false, 'os tokens da análise anterior somem');
     await p.context().close();
   });
 });

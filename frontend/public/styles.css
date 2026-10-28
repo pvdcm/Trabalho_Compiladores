@@ -14,6 +14,16 @@
   --erro: #b3261e;
   --erro-bg: #fbe9e7;
   --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  /* Cores das categorias de token (destaque do código, tabela e legenda). */
+  --g-reservada: #7b3fa0;
+  --g-identificador: #1f5fa8;
+  --g-literal: #1f7a4d;
+  --g-string: #a0522d;
+  --g-operador: #b34700;
+  --g-delimitador: #5f5a52;
+  --g-comentario: #8a857c;
+  --g-erro: #b3261e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +42,15 @@
     --alerta-bg: #2e2617;
     --erro: #f2a39b;
     --erro-bg: #3a1f1c;
+
+    --g-reservada: #d4a5f0;
+    --g-identificador: #8ab8f0;
+    --g-literal: #86d4a6;
+    --g-string: #eaa77f;
+    --g-operador: #f2a65e;
+    --g-delimitador: #bdb6ab;
+    --g-comentario: #8f897f;
+    --g-erro: #f2a39b;
   }
 }
 
@@ -91,7 +110,7 @@ body {
 }
 
 @media (max-width: 800px) {
-  .area { grid-template-columns: 1fr; padding: 12px 16px; }
+  .area { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
   .cabecalho { padding: 16px 16px 4px; }
 }
 
@@ -115,7 +134,8 @@ body {
 
 h2 { margin: 0; font-size: 1.05rem; }
 
-.campo-exemplo { display: flex; align-items: center; gap: 8px; }
+.campo-exemplo { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; }
+.campo-exemplo select { min-width: 0; flex: 1 1 auto; }
 .campo-exemplo label { font-size: 0.9rem; color: var(--suave); }
 
 select, .botao, textarea { font: inherit; color: inherit; }
@@ -186,8 +206,10 @@ select {
 
 .resultado[data-estado="sucesso"] { background: var(--ok-bg); border-left-color: var(--ok); }
 .resultado[data-estado="sucesso"] h2 { color: var(--ok); }
-.resultado[data-estado="erro-entrada"] { background: var(--alerta-bg); border-left-color: var(--alerta); }
-.resultado[data-estado="erro-entrada"] h2 { color: var(--alerta); }
+.resultado[data-estado="erro-entrada"],
+.resultado[data-estado="erro-lexico"] { background: var(--alerta-bg); border-left-color: var(--alerta); }
+.resultado[data-estado="erro-entrada"] h2,
+.resultado[data-estado="erro-lexico"] h2 { color: var(--alerta); }
 .resultado[data-estado="erro-comunicacao"],
 .resultado[data-estado="erro-inesperado"] { background: var(--erro-bg); border-left-color: var(--erro); }
 .resultado[data-estado="erro-comunicacao"] h2,
@@ -204,6 +226,276 @@ select {
 .detalhes dd { margin: 0; font-size: 1.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 .aviso-etapa { margin: 0; font-size: 0.85rem; color: var(--suave); }
+
+/* ---------- Análise léxica ---------- */
+
+h3 { margin: 0 0 6px; font-size: 0.95rem; }
+.nota { margin: 0 0 6px; font-size: 0.8rem; color: var(--suave); }
+[hidden] { display: none !important; }
+
+/* Cor de cada grupo de token. */
+.g-reservada { --cor: var(--g-reservada); }
+.g-identificador { --cor: var(--g-identificador); }
+.g-literal { --cor: var(--g-literal); }
+.g-string { --cor: var(--g-string); }
+.g-operador { --cor: var(--g-operador); }
+.g-delimitador { --cor: var(--g-delimitador); }
+.g-comentario { --cor: var(--g-comentario); }
+.g-erro { --cor: var(--g-erro); }
+
+.amostra {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--cor);
+}
+
+.bloco { padding-top: 4px; }
+
+.categorias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.categoria {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.categoria strong { font-variant-numeric: tabular-nums; }
+
+.lista-erros { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.erro-item {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--borda);
+  border-left: 3px solid var(--erro);
+  border-radius: 6px;
+  background: var(--erro-bg);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.erro-item:hover, .erro-item:focus-visible { outline: 2px solid var(--erro); outline-offset: 1px; }
+
+.lexica { grid-column: 1 / -1; min-width: 0; }
+
+.legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  color: var(--suave);
+}
+.legenda li { display: inline-flex; align-items: center; gap: 5px; }
+
+.aviso-desatualizado {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--alerta-bg);
+  color: var(--alerta);
+  font-size: 0.85rem;
+}
+
+.conceitos {
+  padding: 10px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--editor-bg);
+  font-size: 0.9rem;
+}
+.conceitos summary { cursor: pointer; font-weight: 600; }
+.conceitos p { margin: 8px 0 0; }
+.conceitos code { font-family: var(--mono); }
+
+.abas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--borda);
+}
+.abas [role="tab"] {
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: var(--suave);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.abas [role="tab"][aria-selected="true"] {
+  border-color: var(--borda);
+  background: var(--painel);
+  color: var(--texto);
+  margin-bottom: -1px;
+}
+.abas [role="tab"]:focus-visible { outline: 2px solid var(--acento); outline-offset: -2px; }
+
+.painel-aba { min-width: 0; }
+
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.controles .botao { padding: 6px 12px; }
+.controles .botao:disabled { cursor: not-allowed; }
+.indicador { margin-left: auto; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
+
+.passo-corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.codigo {
+  position: relative;
+  margin: 0;
+  max-height: 420px;
+  min-height: 120px;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--editor-bg);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  tab-size: 2;
+}
+.codigo:focus { outline: none; }
+
+.trecho {
+  color: var(--cor);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s, color 0.2s;
+}
+.trecho:not(.g-comentario):not(.g-erro) { background: color-mix(in srgb, var(--cor) 10%, transparent); }
+.trecho.g-comentario { font-style: italic; }
+.trecho.g-erro {
+  background: var(--erro-bg);
+  text-decoration: underline wavy var(--g-erro);
+  text-underline-offset: 3px;
+}
+.trecho.pendente { color: var(--suave); background: transparent; opacity: 0.55; text-decoration: none; }
+.trecho.atual {
+  opacity: 1;
+  color: var(--cor);
+  background: color-mix(in srgb, var(--cor) 22%, transparent);
+  outline: 2px solid var(--cor);
+  outline-offset: 1px;
+}
+
+.passo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+}
+.passo-info h3 { margin: 0; }
+.passo-info p { margin: 0; font-size: 0.9rem; }
+
+.caminho-rotulo { display: block; font-size: 0.8rem; color: var(--suave); margin-bottom: 4px; }
+.estados {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+.estados .estado {
+  padding: 2px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  background: var(--editor-bg);
+}
+.estados .estado.aceitacao { border: 3px double var(--ok); color: var(--ok); font-weight: 700; }
+.estados .estado.rejeicao { border: 2px solid var(--erro); color: var(--erro); font-weight: 700; }
+.estados .leitura { color: var(--suave); white-space: pre; }
+.estados .leitura::before { content: "—"; }
+.estados .leitura::after { content: "→"; }
+
+.ficha {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.ficha div { padding: 6px 8px; border: 1px solid var(--borda); border-radius: 8px; min-width: 0; }
+.ficha dt { font-size: 0.75rem; color: var(--suave); }
+.ficha dd { margin: 0; font-family: var(--mono); font-size: 0.9rem; overflow-wrap: anywhere; }
+
+.rolagem { overflow-x: auto; border: 1px solid var(--borda); border-radius: 10px; }
+.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.tabela th, .tabela td { padding: 6px 10px; border-bottom: 1px solid var(--borda); text-align: left; vertical-align: top; }
+.tabela th { position: sticky; top: 0; background: var(--editor-bg); font-size: 0.8rem; color: var(--suave); }
+.tabela tbody tr:last-child td { border-bottom: none; }
+.tabela td:first-child, .tabela td:nth-child(4), .tabela td:nth-child(5) { font-variant-numeric: tabular-nums; }
+#tabela-tokens tbody tr { cursor: pointer; }
+#tabela-tokens tbody tr:hover, #tabela-tokens tbody tr:focus-visible { background: var(--editor-bg); outline: none; }
+#tabela-tokens tbody tr.atual { background: color-mix(in srgb, var(--acento) 14%, transparent); }
+.tabela .tipo { color: var(--cor); font-weight: 600; font-size: 0.8rem; }
+.tabela .lexema, .tabela .original { font-family: var(--mono); white-space: pre; }
+
+.comparacao .numero { color: var(--suave); width: 1%; }
+.token-par {
+  display: inline-block;
+  margin: 1px 4px 1px 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--cor) 12%, transparent);
+  color: var(--cor);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  white-space: pre;
+}
+
+@media (max-width: 800px) {
+  .passo-corpo { grid-template-columns: 1fr; }
+  .codigo { max-height: 300px; font-size: 0.85rem; }
+  .indicador { margin-left: 0; width: 100%; }
+  .controles .botao { flex: 1 1 auto; min-height: 40px; }
+  .abas [role="tab"] { flex: 1 1 auto; padding: 8px 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trecho { transition: none; }
+}
+
+/* Fontes como Cascadia Code e Fira Code desenham ">=" como "≥" e "===" como "≡" (ligaduras).
+   Num visualizador léxico isso esconde os caracteres reais, então as ligaduras ficam desligadas.
+   Fica no fim do arquivo porque o atalho "font" (usado no textarea) desfaz esta propriedade. */
+code, pre, textarea, .codigo, .lexema, .original, .token-par, .estados, .ficha dd {
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
 
 .rodape {
   display: flex;

@@ -57,16 +57,123 @@
         <p id="resultado-mensagem"></p>
         <dl id="resultado-detalhes" class="detalhes" hidden></dl>
       </div>
+
+      <div id="bloco-categorias" class="bloco" hidden>
+        <h3>Tokens por categoria</h3>
+        <ul id="contagem-categorias" class="categorias"></ul>
+      </div>
+
+      <div id="bloco-erros" class="bloco" hidden>
+        <h3>Erros léxicos</h3>
+        <p class="nota">Clique em um erro para vê-lo no passo a passo.</p>
+        <ol id="lista-erros" class="lista-erros"></ol>
+      </div>
+
       <p class="aviso-etapa">
-        Nesta versão o servidor apenas recebe e valida o código. Os tokens e a árvore sintática
-        aparecerão neste painel nas próximas etapas.
+        Nesta etapa o VisuLex faz a <strong>análise léxica</strong>. A análise sintática (estrutura
+        do programa) virá na próxima etapa: um programa com erro de sintaxe, mas com tokens válidos,
+        é tokenizado normalmente.
       </p>
+    </section>
+
+    <section id="secao-lexica" class="painel lexica" aria-labelledby="titulo-lexica" hidden>
+      <div class="painel-topo">
+        <h2 id="titulo-lexica">Análise léxica</h2>
+        <ul class="legenda" aria-label="Cores das categorias">
+          <li><span class="amostra g-reservada"></span>Palavra reservada</li>
+          <li><span class="amostra g-identificador"></span>Identificador</li>
+          <li><span class="amostra g-literal"></span>Número ou booleano</li>
+          <li><span class="amostra g-string"></span>String</li>
+          <li><span class="amostra g-operador"></span>Operador</li>
+          <li><span class="amostra g-delimitador"></span>Delimitador</li>
+          <li><span class="amostra g-comentario"></span>Comentário</li>
+          <li><span class="amostra g-erro"></span>Erro léxico</li>
+        </ul>
+      </div>
+      <p id="aviso-desatualizado" class="aviso-desatualizado" hidden>
+        O código foi alterado depois da análise. Clique em Analisar para atualizar os tokens.
+      </p>
+
+      <details class="conceitos" open>
+        <summary>O que o scanner faz?</summary>
+        <p>
+          O <strong>analisador léxico</strong> (scanner) é a primeira fase do compilador. Ele lê o
+          código caractere a caractere e agrupa os caracteres em <strong>lexemas</strong>, que são
+          os trechos de texto com significado, como <code>while</code>, <code>total</code> ou
+          <code>&gt;=</code>.
+        </p>
+        <p>
+          Cada lexema é classificado em um <strong>token</strong>: o par (categoria, lexema), por
+          exemplo (PALAVRA_RESERVADA, <code>while</code>) ou (IDENTIFICADOR, <code>total</code>).
+          Para reconhecer cada lexema, o scanner segue um <strong>autômato finito</strong>: a cada
+          caractere lido ele muda de estado, e o lexema termina quando o próximo caractere não
+          pode continuá-lo. Por isso <code>&gt;=</code> vira um único token, e não dois.
+        </p>
+        <p>
+          Espaços em branco e comentários só separam os lexemas e são descartados. Um caractere
+          que não pertence à linguagem gera um <strong>erro léxico</strong>; o scanner o registra
+          e continua a leitura, para mostrar todos os erros de uma vez.
+        </p>
+      </details>
+
+      <div class="abas" role="tablist" aria-label="Visualizações da análise léxica">
+        <button type="button" role="tab" id="aba-passos" aria-controls="painel-passos" aria-selected="true">Passo a passo</button>
+        <button type="button" role="tab" id="aba-tabela" aria-controls="painel-tabela" aria-selected="false" tabindex="-1">Tabela de tokens</button>
+        <button type="button" role="tab" id="aba-comparacao" aria-controls="painel-comparacao" aria-selected="false" tabindex="-1">Código × tokens</button>
+      </div>
+
+      <div id="painel-passos" role="tabpanel" aria-labelledby="aba-passos" class="painel-aba">
+        <div class="controles" aria-label="Controles do passo a passo">
+          <button type="button" id="passo-inicio" class="botao secundario" title="Voltar ao início">⏮ Início</button>
+          <button type="button" id="passo-anterior" class="botao secundario" title="Passo anterior">◀ Anterior</button>
+          <button type="button" id="passo-reproduzir" class="botao primario">▶ Reproduzir</button>
+          <button type="button" id="passo-proximo" class="botao secundario" title="Próximo passo">Próximo ▶</button>
+          <button type="button" id="passo-fim" class="botao secundario" title="Ir para o fim">Fim ⏭</button>
+          <span id="passo-indicador" class="indicador" aria-live="polite"></span>
+        </div>
+        <div class="passo-corpo">
+          <pre id="codigo-destacado" class="codigo" aria-label="Código com os tokens destacados"></pre>
+          <div class="passo-info" aria-live="polite">
+            <h3 id="passo-titulo"></h3>
+            <p id="passo-explicacao"></p>
+            <div id="passo-caminho" class="caminho" hidden>
+              <span class="caminho-rotulo">Percurso no autômato:</span>
+              <ol id="passo-estados" class="estados"></ol>
+            </div>
+            <dl id="passo-token" class="ficha" hidden></dl>
+          </div>
+        </div>
+      </div>
+
+      <div id="painel-tabela" role="tabpanel" aria-labelledby="aba-tabela" class="painel-aba" hidden>
+        <p class="nota">Clique em uma linha para ver o token no passo a passo.</p>
+        <div class="rolagem">
+          <table id="tabela-tokens" class="tabela">
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Tipo</th><th scope="col">Lexema</th><th scope="col">Linha</th><th scope="col">Coluna</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="painel-comparacao" role="tabpanel" aria-labelledby="aba-comparacao" class="painel-aba" hidden>
+        <p class="nota">Cada linha do código original ao lado da sequência de tokens que o scanner produziu para ela.</p>
+        <div class="rolagem">
+          <table id="tabela-comparacao" class="tabela comparacao">
+            <thead>
+              <tr><th scope="col">Linha</th><th scope="col">Código original</th><th scope="col">Sequência de tokens</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </section>
   </main>
 
   <footer class="rodape">
     <span id="status-servidor" class="status" data-online="">Verificando servidor…</span>
-    <span>VisuLex · etapa 2</span>
+    <span>VisuLex · etapa 3</span>
   </footer>
 </body>
 </html>

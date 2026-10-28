@@ -1,5 +1,5 @@
-// Programas de exemplo em MiniJS. Cada um demonstra construções do subconjunto que será
-// analisado nas próximas etapas (ver docs/minijs.md).
+// Programas de exemplo em MiniJS (ver docs/minijs.md). Cada um demonstra construções do
+// subconjunto; os marcados com contemErros têm erros de propósito.
 export const EXEMPLOS = [
   {
     id: 'variaveis',
@@ -72,9 +72,32 @@ function maior(x, y) {
 let m = maior(4, 9);`,
   },
   {
+    id: 'categorias',
+    titulo: 'Todas as categorias de tokens',
+    descricao: 'Usa cada categoria de token de MiniJS, inclusive operadores compostos e os dois estilos de comentário.',
+    construcoes: [
+      'palavras reservadas', 'identificadores', 'inteiros', 'reais', 'strings', 'booleanos',
+      'operadores aritméticos, relacionais, lógicos e de atribuição', 'delimitadores', 'comentários',
+    ],
+    contemErros: false,
+    codigo: `/* Um token de cada categoria de MiniJS */
+const PI = 3.14;
+let raio = 2;
+let nome = 'círculo';
+let area = PI * raio * raio;
+// relacionais e lógicos, inclusive compostos
+let grande = area >= 10 && !false;
+if (grande === true || raio != 0) {
+  raio = raio % 3 - 1 / 2;
+}
+function dobro(a, b) {
+  return (a + b) * 2;
+}`,
+  },
+  {
     id: 'com-erros',
     titulo: 'Programa com erros intencionais',
-    descricao: 'Contém um símbolo inválido e um ponto e vírgula ausente, para as próximas etapas.',
+    descricao: 'Tem um erro léxico (o símbolo @) e um erro sintático (falta o ; no fim). O scanner só aponta o primeiro: o segundo será detectado pela análise sintática.',
     construcoes: ['erro léxico: símbolo @', 'erro sintático: falta ;'],
     contemErros: true,
     codigo: `// Este programa contém erros de propósito:
@@ -82,6 +105,23 @@ let m = maior(4, 9);`,
 // falta o ";" no fim da última linha (erro sintático)
 let total = 10 @ 2;
 let dobro = total * 2`,
+  },
+  {
+    id: 'erros-lexicos',
+    titulo: 'Erros léxicos variados',
+    descricao: 'Um erro léxico diferente em cada linha. O scanner registra todos e continua a leitura depois de cada um.',
+    construcoes: [
+      'número malformado', 'string não fechada', 'operador incompleto', 'caractere fora do subconjunto',
+      'comentário não fechado',
+    ],
+    contemErros: true,
+    codigo: `// Cada linha abaixo tem um erro léxico diferente
+let preco = 12abc;
+let nome = "Ana;
+let ambos = preco & 2;
+let lista = [1, 2];
+let fim = 0; /* comentário que nunca é fechado
+let depois = 1;`,
   },
 ];
 
