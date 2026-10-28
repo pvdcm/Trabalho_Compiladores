@@ -5,15 +5,16 @@ Software educacional web que mostra as análises léxica e sintática de **MiniJ
 ## Arquitetura
 
 - `frontend/`: HTML, CSS e JavaScript puros (módulos ES) servidos pelo Nginx. **Sem frameworks e sem bundler.**
-  - `public/js/exemplos.js` (programas de exemplo), `validacao.js` (validação antes do envio), `api.js` (comunicação com o backend), `interface.js` (comportamento da tela; recebe `doc` e as funções de API por parâmetro, para testes), `main.js` (ponto de entrada).
+  - `public/js/exemplos.js` (programas de exemplo), `validacao.js` (validação antes do envio), `api.js` (comunicação com o backend), `lexico.js` (funções puras de exibição dos tokens: categorias e cores, trechos, contagens), `interface.js` (comportamento da tela e passo a passo; recebe `doc` e as funções de API por parâmetro, para testes), `main.js` (ponto de entrada).
   - `nginx.conf` repassa `/api/` para `http://backend:3000`. O navegador só usa caminhos relativos (`/api/...`).
 - `backend/`: Node.js 22 **sem dependências npm**, só módulos nativos (CommonJS).
-  - `src/app.js` (rotas, leitura do corpo, tratamento de erros), `validacao.js`, `erros.js` (`ErroRequisicao`), `processamento.js` (onde os analisadores serão conectados), `server.js`.
+  - `src/app.js` (rotas, leitura do corpo, tratamento de erros), `validacao.js`, `erros.js` (`ErroRequisicao`), `analisadorLexico.js` (scanner de MiniJS: tokens, erros léxicos e passos com os estados do autômato), `processamento.js` (executa o scanner e monta a resposta; o parser será conectado aqui), `server.js`.
 - `docker-compose.yml`: serviços `backend` e `frontend` (porta 8080) e serviço `testes` no perfil `test`, com a imagem oficial do Playwright.
 
 ## Contrato da API (não quebrar sem atualizar testes e README)
 
-- `POST /api/analisar` com `{ "codigo": string }`. Sucesso **200**: `{ recebido: true, mensagem, resumo: { caracteres, linhas } }`.
+- `POST /api/analisar` com `{ "codigo": string }`. Requisição válida → **200**: `{ sucesso, mensagem, resumo: { caracteres, linhas, tokens, erros }, tokens, erros, passos }`. Erros léxicos no programa **não** mudam o status: vêm com `sucesso: false` e na lista `erros`. Formato de cada item no README.
+- As categorias de token (`tipo`) do backend e de `frontend/public/js/lexico.js` precisam ser as mesmas; um teste unitário confere.
 - Todo erro tem o formato `{ "erro": { "codigo": "CODIGO_EM_MAIUSCULAS", "mensagem": "texto para o usuário" } }`. A tabela completa está no README.
 - Erros inesperados devolvem **500** genérico. Nunca exponha stack, caminhos ou variáveis de ambiente na resposta; os detalhes vão só para o log do servidor.
 - Mensagens de validação do frontend e do backend são **idênticas**, e um teste verifica isso.
@@ -63,6 +64,8 @@ Uma mensagem por funcionalidade, em português, com título curto no imperativo 
 
 ## Próximas etapas previstas
 
-1. Analisador léxico de MiniJS (AFD, tokens com linha e coluna, erros léxicos), exibido passo a passo.
-2. Analisador sintático LL(1) descendente preditivo, com a árvore construída passo a passo.
+1. ~~Analisador léxico de MiniJS~~ (etapa 3, implementado).
+2. Analisador sintático LL(1) descendente preditivo (etapa 4), consumindo `tokens` do scanner, com a árvore construída passo a passo.
 3. Explicações teóricas na interface e avaliação com alunos (pré e pós-teste).
+
+Ambiente local do aluno: o Node instalado é o 20 (o projeto pede 22) e não há Chromium do Playwright baixado. Fora do Docker, rode as suítes com a lista de arquivos (`node --test test/*.test.js`) e os testes de interface com `NAVEGADOR=msedge`.
