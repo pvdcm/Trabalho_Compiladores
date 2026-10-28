@@ -84,6 +84,7 @@ Execuções feitas **fora do Docker**, porque o Docker Desktop não ficou em exe
 | 22 | Todas as suítes + implantação, dentro do Docker | Scanner, endpoints, unitários, interface, ponta a ponta, implantação e regressão das etapas 1 e 2 | `docker compose --profile test run --rm testes` | **191 aprovados, 0 reprovados** (backend 95, frontend 42, interface 45, implantação 9); 4 × `PASSOU`; código de saída 0; 101 s | — |
 | 23 | Fluxo completo da seção 9 do enunciado, no navegador, na aplicação do Docker | Manual | Navegador em `http://localhost:8081` | **Passou** (detalhes abaixo) | — |
 | 24 | Ambiente limpo simulado (seção 9.1): clone dos commits da etapa 3 numa pasta vazia, sem `.env` | Implantação + regressão completa | `git clone` do repositório local (commit `d4b524f`), `docker compose build --no-cache --pull`, `docker compose up -d`, `docker compose ps`, `docker compose --profile test run --rm testes` | **healthy**; **191 aprovados, 0 reprovados**; 4 × `PASSOU`; código de saída 0; 127 s | Porta definida com `FRONTEND_PORT=8082` só na sessão, porque a 8080 está ocupada nesta máquina. O Docker Desktop imprimiu avisos `http2: server: error reading preface from client` durante o build, sem efeito no resultado. |
+| 25 | Instalação limpa a partir do GitHub, depois do push | Implantação + regressão completa | `git clone https://github.com/pvdcm/Trabalho_Compiladores.git` numa pasta vazia (commit `0dc6b08`, sem `.env`), `docker compose build --no-cache --pull`, `docker compose up -d`, `docker compose ps`, `docker compose --profile test run --rm testes` | **healthy**; **191 aprovados, 0 reprovados**; 4 × `PASSOU`; código de saída 0; 100 s. O remoto estava no mesmo commit do local, e o README e a imagem citada nele foram servidos pelo GitHub (HTTP 200) | Porta definida com `FRONTEND_PORT=8082` só na sessão. |
 
 **Roteiro manual (item 23):**
 
@@ -101,7 +102,7 @@ Os prints da entrega foram gerados a partir desta aplicação, com o Edge pelo P
 - [x] Validação de instalação limpa (seção do README) em outra pasta: feito em 20/10/2026 a partir de um clone do GitHub (itens 12 e 13).
 - [x] **Etapa 3 no Docker:** feito em 28/10/2026 (itens 20 a 23): 191 de 191 testes e roteiro manual aprovado.
 - [x] **Etapa 3 em ambiente limpo:** feito em 28/10/2026 a partir de um clone dos commits (item 24).
-- [ ] Depois do push, repetir o item 24 clonando do GitHub (confirma que o remoto tem tudo).
+- [x] Depois do push, repetir o item 24 clonando do GitHub: feito em 28/10/2026 (item 25).
 - [ ] Testes de acessibilidade automatizados (ainda não implementados).
 
 ## Modelo para novas entradas
